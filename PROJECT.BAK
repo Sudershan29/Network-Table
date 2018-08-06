@@ -1,0 +1,264 @@
+#include<iostream.h>
+#include<conio.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<limits.h>
+#include<graphics.h>
+#include<dos.h>
+int n,sht[20][20],ind[20];
+#define X n
+struct Node
+{
+    int dest;
+    char ipaddr[30];
+    int traffic;
+    struct Node* next;
+};
+struct List
+{
+    struct Node *head;
+};
+struct Graph
+{
+    int V;
+    struct List* array;
+};
+struct Node* newAdjListNode(int dest,char n[],int traffic=0)
+{
+    struct Node* newNode =(struct Node*) malloc(sizeof(struct Node));
+    newNode->dest = dest;
+    newNode->traffic=traffic;
+    strcpy(newNode->ipaddr,n);
+    newNode->next = NULL;
+    return newNode;
+}
+struct Graph* createGraph(int V)
+{
+    struct Graph* graph = (struct Graph*) malloc(sizeof(struct Graph));
+    graph->V = V;
+    graph->array = (struct List*) malloc(V* sizeof(struct List));
+    int i;
+    for (i = 0; i < V; ++i)
+       graph->array[i].head = NULL;
+    return graph;
+}
+void addEdge(struct Graph* graph, int src, int dest,char n[][50],int traffic=0)
+{
+    struct Node* newNode = newAdjListNode(dest,n[dest],traffic);
+    newNode->next = graph->array[src].head;
+     graph->array[src].head = newNode;
+    newNode = newAdjListNode(src,n[src],traffic);
+    newNode->next = graph->array[dest].head;
+    graph->array[dest].head = newNode;
+}
+void display()
+{
+    settextstyle(9,HORIZ_DIR,1);
+    outtextxy(getmaxx()/2-125,15,"NETWORK TABLE");
+    settextstyle(7,HORIZ_DIR,1);
+    outtextxy(75,getmaxy()/3,"CHOOSE");
+    settextstyle(0,HORIZ_DIR,1);
+    outtextxy(125,getmaxy()/3+50,"1. Create New Network");
+    delay(1000);
+    outtextxy(125,getmaxy()/3+75,"2. Find Minimum Traffic Between Computers"); delay(500);
+    outtextxy(125,getmaxy()/3+100,"3. Adjacent List");
+    delay(250);
+    outtextxy(125,getmaxy()/3+125,"4. Graphical Representation");
+    delay(100);
+    outtextxy(125,getmaxy()/3+150,"5. Exit");
+}
+void loading_display()
+{
+    for(int i=0;i<=720;i+=25)
+    {
+	if(i<=300)
+	   outtextxy(getmaxx()/2-25,getmaxy()/2,"Loading!!");
+	else if(i<=325)
+	   outtextxy(getmaxx()/2+10-25,getmaxy()/2,"ding!!");
+	else if(i<=350)
+	   outtextxy(getmaxx()/2+30-25,getmaxy()/2,"g!!");
+	if(i%75)
+	   pieslice(i,getmaxy()/2,45,360-45,25);
+	else if(i%50)
+	   pieslice(i,getmaxy()/2,30,360-30,25);
+	else
+	    pieslice(i,getmaxy()/2,0,360,25); delay(100);
+	clrscr();
+	setbkcolor(7);
+    }
+}
+void printGraph(struct Graph* graph)
+{
+    int v;
+    for (v = 0; v < graph->V; ++v)
+    {
+	struct Node* pCrawl = graph->array[v].head;
+	printf("\n Adjacency list of Computer %d\n", v);
+	while (pCrawl)
+	{
+	    printf(" ->%d IP(%s)" , pCrawl->dest,pCrawl->ipaddr);
+	    pCrawl = pCrawl->next;
+	}
+	printf("\n"); }
+}
+int minDistance(int dist[], int sptSet[])
+{
+    int min = INT_MAX, min_index=0;
+    for (int v = 0; v < X; v++)
+	if (sptSet[v] == 0 && dist[v] <= min)
+	{
+	    min = dist[v];
+	    min_index = v;
+	}
+    return min_index;
+}
+void printSolution(int dist[], int n)
+{
+    cout<<"Vertex Distance from Source Path \n";
+    for (int i = 0; i < X; i++)
+    {
+	cout<<i<<" \t\t "<<dist[i]<<"\t\t"; cout<<sht[i][0];
+	for(int j=1;j<ind[i];j++)
+	    if(sht[i][j]!=sht[i][j-1])
+		cout<<" -> "<<sht[i][j]; cout<<"\n";
+    }
+}
+void dijkstra(int **graph, int src)
+{
+    int dist[10];
+    int sptSet[10];
+    for (int i = 0; i < X; i++)
+    {
+	dist[i]=INT_MAX; sptSet[i] = 0;
+	sht[i][ind[i]++]=src;
+    }
+    dist[src] = 0;
+    for (int count = 0; count < X-1; count++)
+    {
+	int u = minDistance(dist, sptSet);
+	sptSet[u] = 1;
+	for (int v = 0; v < X; v++)
+	    if (!sptSet[v] && graph[u][v] && dist[u] != INT_MAX && dist[u]+graph[u][v] < dist[v])
+	    {
+		dist[v] = dist[u] + graph[u][v];
+		sht[v][ind[v]++]=u;
+	    }
+    }
+    for(i=0;i<X;i++)
+	sht[i][ind[i]++]=i;
+    printSolution(dist, X);
+}
+void assigngraph(int **graph1,struct Graph *graph)
+{
+    for(int i=0;i<X;i++)
+    {
+	struct Node *temp=graph->array[i].head;
+	for(int j=0;j<X;j++)
+	    graph1[i][j]=0;
+	while(temp)
+	{
+	    graph1[i][temp->dest]=temp->traffic;
+	    temp=temp->next;
+	}
+    }
+}
+int main()
+{
+    int i,ch,m,h,j,t;
+    char a[20][50];
+    int **graph1;
+    do
+    {
+	int gd=DETECT , gm; initgraph(&gd,&gm,"c:\\turboc++\\tc\\bgi"); display();
+	cin>>ch;
+	closegraph();
+	switch(ch)
+	{
+	 case 1:cout<<"\n\nEnter the number of computers "; cin>>n;
+		X=n;
+		struct Graph* graph = createGraph(X); cout<<"\nEnter all the IP address \n";
+		for(i=0;i<n;i++)
+		   cin>>a[i];
+		for(i=0;i<n;i++)
+		{
+		    cout<<"\n\n System No. \t IP address \n";
+		    for(j=0;j<n;j++)
+			cout<<"\t"<<j<<"\t\t"<<a[j]<<endl;
+		ra: cout<<"\n\nEnter the number of systems for system "<<i+1<<" for connection ";
+		    cin>>m;
+		    if(m>=X)
+		    {
+			cout<<"\n\t\tError 106 !! Cannot have connections more than system";
+			goto ra;
+		    }
+		    for(j=0;j<m;j++)
+		    {
+		    re: cout<<"\n\n\tEnter the system number ";
+			cin>>h; if(h>=X||h==i) {
+			    cout<<"\n\nINVALID SYSTEM NUMBER....PRESS any key to continue and then Re-enter the system number ";
+			    getch();
+			    goto re; }
+			cout<<"\n\tEnter the traffic between two computer "; cin>>t;
+			addEdge(graph,i,h,a,t);
+		    }
+		    getch();
+		 }
+		 break;
+	    case 2:int gd=DETECT , gm;
+		initgraph(&gd,&gm,"c:\\turboc++\\tc\\bgi");
+		loading_display();
+		closegraph();
+		graph1=new int *[X];
+		for(i=0;i<X;i++)
+		    graph1[i]=new int[X];
+		assigngraph(graph1,graph);
+		for(i=0;i<X;i++)
+			ind[i]=0;
+		int ch1;
+		cout<<"\n\t\t\tFINDING DISTANCE FROM A SOURCE\n\n ";
+	     tr:cout<<"\n\nEnter the system number of the computer from which you desire to find the distance of the computers from (Use the table given below for entering the index values ) ";
+		cout<<"\n\n\t System No. \t IP address \n";
+		for(j=0;j<n;j++)
+		    cout<<"\t\t"<<j<<"\t\t"<<a[j]<<endl;
+		cout<<"\n\n SOURCE : ";
+		cin>>ch1;
+		cout<<"\n\n";
+		if(ch1>=X)
+		{
+		    cout<<"\n\t\tRe enter the computer number ";
+		    goto tr;
+		}
+		dijkstra(graph1, ch1);
+		getch();
+		break;
+	    case 3://int gd=DETECT , gm; initgraph(&gd,&gm,"c:\\tc\\bgi"); loading_display();
+		closegraph();
+		clrscr();
+		cout<<"\n\n\t\t\tPRINTING ADJACENT LIST \n\n";
+		cout<<"\n\n \t System No. \t IP address \n";
+		for(j=0;j<n;j++)
+		    cout<<"\t\t"<<j<<"\t\t"<<a[j]<<endl;
+		cout<<"\n\n";
+		printGraph(graph);
+		getch();
+		break;
+	    case 4://int gd=DETECT , gm;
+		initgraph(&gd,&gm,"c:\\turboc++\\tc\\bgi");
+		loading_display();
+		closegraph();
+		cout<<"\n\n \t System No. \t IP address \n";
+		for(j=0;j<n;j++)
+		    cout<<"\t\t"<<j<<"\t\t"<<a[j]<<endl;
+		cout<<"\n\n\n\t\t\tMATRIX REPRESENTATION OF GRAPH\n\n";for(i=0;i<X;i++)
+		{
+		    cout<<"\t";
+		    for(j=0;j<X;j++)
+			cout<<"\t"<<graph1[i][j]<<" ";
+		    cout<<endl;
+		}
+		getch();
+		break;
+	} }while(ch!=5);
+	getch(); return 0;
+}
